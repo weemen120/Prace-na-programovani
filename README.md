@@ -1,5 +1,2 @@
 Klient na deskové hry
-Poslední = 
-Prokop = 
-Smetana = 
-Filip =
+ členové: Poslední,Prokop, Smetana,Filip 
