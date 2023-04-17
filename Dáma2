@@ -1,0 +1,45 @@
+class Dama:
+    def __init__(self):
+        self.board = [[0, 2, 0, 2, 0, 2, 0, 2],
+                      [2, 0, 2, 0, 2, 0, 2, 0],
+                      [0, 2, 0, 2, 0, 2, 0, 2],
+                      [1, 0, 1, 0, 1, 0, 1, 0],
+                      [0, 1, 0, 1, 0, 1, 0, 1],
+                      [-1, 0, -1, 0, -1, 0, -1, 0],
+                      [0, -1, 0, -1, 0, -1, 0, -1],
+                      [-1, 0, -1, 0, -1, 0, -1, 0]]
+        self.current_player = 1
+        
+    def is_valid_move(self, move):
+        # ověří, zda je tah platný
+        return True  # implementace ověřování platnosti tahu zde
+    
+    def get_possible_moves(self, piece):
+        # vrátí seznam možných tahů pro daný kus
+        return []  # implementace hledání možných tahů zde
+    
+    def make_move(self, move):
+        # provede tah na desce
+        pass  # implementace provedení tahu zde
+    
+    def switch_player(self):
+        # přepne hráče
+        self.current_player *= -1
+        
+    def print_board(self):
+        # vytiskne aktuální stav desky
+        for row in self.board:
+            print(row)
+            
+    def play_game(self):
+        # zahájí hru a postupně řídí tahy hráčů
+        while True:
+            self.print_board()
+            piece = input("Vyberte kus, se kterým chcete táhnout: ")
+            moves = self.get_possible_moves(piece)
+            move = input("Vyberte tah: ")
+            if self.is_valid_move(move):
+                self.make_move(move)
+                self.switch_player()
+            else:
+                print("Neplatný tah, zkuste to znovu.")
