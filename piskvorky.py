@@ -1,4 +1,6 @@
 import pygame
+import sys
+import mysql.connector
 
 # Nastavení velikosti okna a hrací plochy
 WIDTH, HEIGHT = 600, 600
@@ -33,12 +35,12 @@ def draw_markers(board):
         for y in range(ROWS):
             if board[y][x] == 'X':
                 center = (x * SQUARE_SIZE + SQUARE_SIZE // 2, y * SQUARE_SIZE + SQUARE_SIZE // 2)
-                radius = SQUARE_SIZE // 2 - 10
-                pygame.draw.circle(screen, RED, center, radius, 2)
+                label = font.render('X', True, WHITE, BLACK)
+                screen.blit(label, (center[0] - label.get_width() // 2, center[1] - label.get_height() // 2))
             elif board[y][x] == 'O':
                 center = (x * SQUARE_SIZE + SQUARE_SIZE // 2, y * SQUARE_SIZE + SQUARE_SIZE // 2)
-                radius = SQUARE_SIZE // 2 - 10
-                pygame.draw.circle(screen, BLUE, center, radius, 2)
+                label = font.render('O', True, WHITE, BLACK)
+                screen.blit(label, (center[0] - label.get_width() // 2, center[1] - label.get_height() // 2))
 
 def draw_winner(player):
     # Zobrazí vítěze
@@ -59,7 +61,110 @@ def get_winner(board):
         return board[0][2]
     return None
 
+def add_win_to_db(name):
+    # Přidá výhru hráče do databáze
+    try:
+        # Establish a connection to the MySQL server (replace the placeholders with your actual database details)
+        connection = mysql.connector.connect(
+            host="dbs.spskladno.cz",
+            user="student13",
+            password="spsnet",
+            database="vyuka13"
+        )
+
+        # Create a cursor object to interact with the database
+        cursor = connection.cursor()
+
+        # Define the SQL query to insert the player's name into the 'wins' table
+        query = "INSERT INTO HRY (player_name) VALUES (%s)"
+        data = (name,)
+
+        # Execute the query
+        cursor.execute(query, data)
+
+        # Commit the changes to the database
+        connection.commit()
+
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+
+def get_player_name():
+    screen.fill(BLACK)
+    input_box = pygame.Rect(WIDTH // 4, HEIGHT // 3, WIDTH // 2, SQUARE_SIZE)
+    color_inactive = pygame.Color('lightskyblue3')
+    color_active = pygame.Color('dodgerblue2')
+    color = color_inactive
+    text = ''
+    active = False
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if input_box.collidepoint(event.pos):
+                    active = not active
+                else:
+                    active = False
+                color = color_active if active else color_inactive
+            if event.type == pygame.KEYDOWN:
+                if active:
+                    if event.key == pygame.K_RETURN:
+                        return text
+                    elif event.key == pygame.K_BACKSPACE:
+                        text = text[:-1]
+                    else:
+                        text += event.unicode
+
+        screen.fill(BLACK)
+        txt_surface = font.render(text, True, color)
+        width = max(200, txt_surface.get_width() + 10)
+        input_box.w = width
+        screen.blit(txt_surface, (input_box.x + 5, input_box.y + 5))
+        pygame.draw.rect(screen, color, input_box, 2)
+
+        pygame.display.flip()
+
+def get_player_symbol():
+    screen.fill(BLACK)
+    font = pygame.font.SysFont('comicsansms', 48)
+    text_x = font.render('X', True, WHITE)
+    text_o = font.render('O', True, WHITE)
+    text_x_rect = text_x.get_rect(center=(WIDTH // 4, HEIGHT // 2))
+    text_o_rect = text_o.get_rect(center=(3 * WIDTH // 4, HEIGHT // 2))
+
+    player_symbol = None
+
+    while player_symbol is None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if text_x_rect.collidepoint(event.pos):
+                    player_symbol = 'X'
+                elif text_o_rect.collidepoint(event.pos):
+                    player_symbol = 'O'
+
+        screen.fill(BLACK)
+        screen.blit(text_x, text_x_rect)
+        screen.blit(text_o, text_o_rect)
+
+        pygame.display.flip()
+
+    return player_symbol
+
 def main():
+    # Zeptáme se hráče na jméno a symbol pomocí GUI
+    player_name = get_player_name()
+    player_symbol = get_player_symbol()
+    print(f'Vaše jméno: {player_name}')
+    print(f'Zvolený symbol: {player_symbol}')
     # Inicializace proměnných
     board = [['', '', ''], ['', '', ''], ['', '', '']]
     turn = 'X'
@@ -87,7 +192,9 @@ def main():
                     # Kontrola, zda hra skončila výhrou některého hráče nebo remízou
                     winner = get_winner(board)
                     if winner is not None:
-                        print(winner)
+                        print(f'Vítěz: {winner}')
+                        if winner == player_symbol:
+                            add_win_to_db(player_name)
                     elif all([all(row) for row in board]):
                         print('Remíza')
             elif event.type == pygame.KEYDOWN:
@@ -109,4 +216,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
