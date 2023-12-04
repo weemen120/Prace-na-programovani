@@ -62,35 +62,60 @@ def get_winner(board):
     return None
 
 def add_win_to_db(name):
-    # Přidá výhru hráče do databáze
     try:
-        # Establish a connection to the MySQL server (replace the placeholders with your actual database details)
         connection = mysql.connector.connect(
             host="dbs.spskladno.cz",
             user="student13",
             password="spsnet",
             database="vyuka13"
         )
-
-        # Create a cursor object to interact with the database
         cursor = connection.cursor()
 
-        # Define the SQL query to insert the player's name into the 'wins' table
-        query = "INSERT INTO HRY (player_name) VALUES (%s)"
-        data = (name,)
+        # Check if the player already exists in the database
+        query_select = "SELECT * FROM HRY WHERE player_name = %s"
+        data_select = (name,)
+        cursor.execute(query_select, data_select)
+        result = cursor.fetchone()
 
-        # Execute the query
-        cursor.execute(query, data)
+        if result:
+            # If the player exists, update the win count
+            query_update = "UPDATE HRY SET wins = wins + 1 WHERE player_name = %s"
+            cursor.execute(query_update, data_select)
+        else:
+            # If the player doesn't exist, insert a new record
+            query_insert = "INSERT INTO HRY (player_name, wins) VALUES (%s, 1)"
+            cursor.execute(query_insert, data_select)
 
-        # Commit the changes to the database
         connection.commit()
-
-        # Close the cursor and connection
         cursor.close()
         connection.close()
 
     except mysql.connector.Error as err:
         print(f"Error: {err}")
+
+def get_player_wins(name):
+    try:
+        connection = mysql.connector.connect(
+            host="dbs.spskladno.cz",
+            user="student13",
+            password="spsnet",
+            database="vyuka13"
+        )
+        cursor = connection.cursor()
+
+        query = "SELECT wins FROM HRY WHERE player_name = %s"
+        data = (name,)
+        cursor.execute(query, data)
+        result = cursor.fetchone()
+
+        cursor.close()
+        connection.close()
+
+        return result[0] if result else 0
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return 0
 
 def get_player_name():
     screen.fill(BLACK)
@@ -193,8 +218,9 @@ def main():
                     winner = get_winner(board)
                     if winner is not None:
                         print(f'Vítěz: {winner}')
-                        if winner == player_symbol:
-                            add_win_to_db(player_name)
+                    if winner == player_symbol:
+                        add_win_to_db(player_name)
+                        print(f'Aktuální počet výher: {get_player_wins(player_name)}')
                     elif all([all(row) for row in board]):
                         print('Remíza')
             elif event.type == pygame.KEYDOWN:
@@ -213,6 +239,7 @@ def main():
 
     # Ukončení programu
     pygame.quit()
+
 
 if __name__ == '__main__':
     main()
